@@ -1,5 +1,6 @@
-# 256BallTilt
-CICS 256 Project
+# Tilting Ball Game
+
+## CICS 256 Project
 
 
 Use the readme as a place for brainstorming and just jotting down ideas rn. Make edits, commit straight. 
