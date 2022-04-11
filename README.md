@@ -15,6 +15,8 @@ Can make basic website via GitHub Pages as well, but let's not think about that 
 
 <a href="https://github.com/suobset/256BallTilt/blob/main/assets/CICS156%20Final%20Project%20Presentation.pdf">Link to project Pitch (uploaded to repository)</a>
 
+<a href="https://sites.google.com/umass.edu/rollgame/home">Link to Project Website with Updates</a>
+
 ### Timeline:
 
 * Week 1: Ordering components, brainstorming/planning as much as possible before they arrive
