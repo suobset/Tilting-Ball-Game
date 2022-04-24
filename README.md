@@ -32,3 +32,8 @@ Can make basic website via GitHub Pages as well, but let's not think about that 
 * 4 buttons to test ball moving input
 * Tilt sensor
 * Our makerboards (or potentially an Arduino Uno or Raspberry Pi, if computation/latency errors occur)
+
+## Installation 
+
+* Connecting Neopixel with Arduino Zero: https://learn.adafruit.com/32x16-32x32-rgb-led-matrix/connecting-with-jumper-wires
+* Install RGB Matrix, AdaFruit GFZ, and others as listed in above link
