@@ -1,7 +1,13 @@
+
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
 #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
+
+//accelerometer
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
 
 // Digital IO pin connected to the button. This will be driven with a
 // pull-up resistor so the switch pulls the pin to ground momentarily.
@@ -11,6 +17,8 @@
 
 #define PIXEL_PIN    2  // Digital IO pin connected to the NeoPixels.
 #define PIXEL_COUNT 256  // Number of NeoPixels
+
+Adafruit_MPU6050 mpu;
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -23,14 +31,28 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
+//set board and true resolution
+#define BOARD_RES 16
+#define TRUE_RES 512
+
+//general game variables
 boolean oldState[] = {HIGH,HIGH};
-int boardX = 7;
-int boardY = 7;
+int boardX = 0;
+int boardY = 0;
+int trueX = 0;
+int trueY = 0;
 int prevBoardX = boardX;
 int prevBoardY = boardY;
 int points = 0;
 int coinX = 0;
 int coinY = 0;
+
+//accelerometer variables
+int mpuTimeout = 0;
+double accelX = 0.0;
+double accelY = 0.0;
+double velX = 0.0;
+double velY = 0.0;
 
 void setup() {
   Serial.begin(9600);
@@ -39,20 +61,65 @@ void setup() {
   strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
   strip.show();  // Initialize all pixels to 'off'
   reset();
+
+  // Try to initialize mpu
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  delay(100);
 }
 
 void loop() {
-  //BUTTON MOVEMENT
+
+  /* Get new sensor events with the readings */
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  //Physics
+  if (millis() > mpuTimeout) {
+    //get accelerometer input
+    accelX = a.acceleration.x-0.35; //account for miscalibration
+    if (accelX > -0.15 && accelX < 0.15) accelX = 0; //rotational deadzone
+    accelY = a.acceleration.y;
+    if (accelY > -0.15 && accelY < 0.15) accelY = 0; //rotational deadzone
+    
+    //add acceleration to velocity
+    velX-=accelX/4;
+    velY+=accelY/4;
+    
+    //add velocity to position
+    trueX+=int(velX);
+    trueY+=int(velY);
+    
+    //print acceleration and velocity for debugging
+    Serial.print("Acceleration X: ");
+    Serial.print(accelX);
+    Serial.print(", Y: ");
+    Serial.print(accelY);
+    Serial.print(" Velocity X: ");
+    Serial.print(velX);
+    Serial.print(", Y: ");
+    Serial.print(velY);
+    Serial.println("");
+    
+    //reset timer
+    mpuTimeout = 50+millis();
+  }
   
+  //BUTTON MOVEMENT
   boolean newState = digitalRead(BUTTON0); // Get current button state
   if((newState == LOW) && (oldState[0] == HIGH)) { // Check if state changed from high to low (button press)
     delay(20); // Short delay to debounce button.
     newState = digitalRead(BUTTON0); // Check if button is still low after debounce.
     if(newState == LOW) { // Yes, still low
-      boardX = boardX+1;
-      if (boardX > 15 || boardX < 0) {
-        reset();
-      }
+      trueX++;
     }
   }
 
@@ -63,14 +130,18 @@ void loop() {
     delay(20);
     newState = digitalRead(BUTTON1);
     if(newState == LOW) {
-      boardY = boardY+1;
-      if (boardY > 15 || boardY < 0) {
-        reset();
-      }
+      trueY++;
     }
   }
 
   oldState[1] = newState;
+
+  //setting board coords
+  boardX = trueX/(TRUE_RES/BOARD_RES);
+  boardY = trueY/(TRUE_RES/BOARD_RES);
+  //checking for out of bounds death
+  if ((boardX >= BOARD_RES) || boardX < 0) {reset();}
+  if ((boardY >= BOARD_RES) || boardY < 0) {reset();}
 
   //POINTS
   if (boardX == coinX && boardY == coinY) {
@@ -90,8 +161,12 @@ void loop() {
 }
 
 void reset() {
-  boardX = 7;
-  boardY = 7;
+  accelX = 0;
+  accelY = 0;
+  velX = 0;
+  velY = 0;
+  trueX = TRUE_RES/2;
+  trueY = TRUE_RES/2;
   strip.clear();
   points = 0;
   calcAndShowBall();
@@ -108,15 +183,15 @@ void calcAndShowBall() {
 }
 
 void calcAndShowCoin() {
-  coinX = random(0, 15);
-  coinY = random(0, 15);
+  coinX = random(1, BOARD_RES-2);
+  coinY = random(1, BOARD_RES-2);
   int pos = calcPosOfCoords(coinX, coinY);
   strip.setPixelColor(pos, strip.Color(20,20,0));
   strip.show();
 }
 
 int calcPosOfCoords(int x, int y) {
-  int pos = (y*16)+x;
-  if (pos % 32 <= 15) pos += 15 - (x*2);
+  int pos = (y*BOARD_RES)+x;
+  if (pos % (BOARD_RES*2) <= BOARD_RES-1) pos += (BOARD_RES-1) - (x*2);
   return pos;
 }
