@@ -38,6 +38,9 @@ Can make basic website via GitHub Pages as well, but let's not think about that 
 * Arduino Zero Documentation: https://docs.arduino.cc/hardware/zero
 * Get started with Arduino Zero: https://www.arduino.cc/en/Guide/ArduinoZero
 * Test ```BlinkExample``` under examples 
+* Connect Acclerometer with Arduino Zero
+* Test ```accl_example``` under examples
 * Connecting Neopixel with Arduino Zero: https://learn.adafruit.com/32x16-32x32-rgb-led-matrix/connecting-with-jumper-wires
+* Use ```3v3``` or ```VBUS``` for red, ```GND``` for black. Find an EXACT 5V port. 
 * Install RGB Matrix, AdaFruit GFZ, and others as listed in above link
 * Test ```neoPixel_32_example``` under examples
