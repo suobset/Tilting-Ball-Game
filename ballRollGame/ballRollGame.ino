@@ -74,10 +74,16 @@ void setup() {
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   delay(100);
+
+  //Adding the code to make LED Blink to check Arduino responsiveness
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
 
+  /* LED Start Code, Ignore */
+  digitalWrite(LED_BUILTIN, HIGH); 
+  
   /* Get new sensor events with the readings */
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
